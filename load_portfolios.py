@@ -1,5 +1,13 @@
 import pandas as pd
 from datetime import datetime
+import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, mean_squared_error
+from tqdm import tqdm
+import random
 
 def load_managed_portfolios(filename, daily=True, drop_perc=1, omit_prefixes=None, keeponly=None):
     
@@ -116,3 +124,12 @@ def load_ff_anomalies(datapath, daily=True, t0=None, tN=None):
 
     return dates, ret, mkt, DATA
 
+def demarket(r, mkt, b=None):
+    if b is None:
+        # Compute beta_i = Cov(r_i, mkt) / Var(mkt) for each asset
+        cov = mkt.T @ r / len(mkt) - mkt.mean() * r.mean(axis=0)
+        var = mkt.var()
+        b = cov / var
+    # Residuals
+    rme = r - np.outer(mkt, b)
+    return rme, b
